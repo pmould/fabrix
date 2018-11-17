@@ -1,6 +1,8 @@
 const assert = require('assert')
 const _ = require('lodash')
-const lib = require('../../dist/index')
+const lib = require('../../dist/index');
+const {SystemSpool}  = require('../../dist/common/spools/system')
+const {FabrixController: Controller}  = require('../../dist/common/Controller');
 
 describe('lib.Core', () => {
   describe('#getClassMethods', () => {
@@ -40,6 +42,53 @@ describe('lib.Core', () => {
       assert(_.includes(methods, 'baz'))
     })
   })
+
+  describe('#mergeApi', () => {
+    const api = {
+      'controllers': {
+        TestController: {
+          name: 'TestController'
+        }
+      }
+    };
+    const mockSpool = class mockSpool extends SystemSpool {
+      constructor(b) {
+        super(b, {
+          config: {},
+          pkg: {},
+          api: {},
+        })
+          this.api = {
+            'controllers': {
+              TapestriesController: class TapestriesController extends Controller {}
+            }
+          };
+        lib.Core.mergeExtensions(this, b);
+      }
+    };
+    const spools = [
+    mockSpool
+    ];
+
+    const app = new lib.FabrixApp({
+      pkg: {},
+      api,
+      config: {
+        main: {
+          spools
+        }
+      }
+    });
+    app.spools = spools;
+    lib.Core.mergeApi(app);
+
+    it(`shoud add keep existing api resource at app.api`, () => {
+      assert(app.api.controllers.TestController);
+    });
+    it(`shoud add spool api resource to app.api`, () => {
+      assert(app.api.controllers.TapestriesController);  
+    });
+  });
 
   describe('#assignGlobals', () => {
     it('should assign values to the global namespace', () => {
